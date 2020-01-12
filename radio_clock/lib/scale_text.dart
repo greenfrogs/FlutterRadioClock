@@ -10,14 +10,14 @@ import 'scale.dart';
 class ScaleText extends Scale {
   TextStyle textStyle;
   List<String> text;
+  double height;
 
-  ScaleText(Alignment alignment, int count, double radius, double offset, this.textStyle, this.text)
+  ScaleText(Alignment alignment, int count, double radius, double offset, this.textStyle, this.text, this.height)
       : super(alignment, count, radius, offset);
 
   @override
   Widget build(BuildContext context) {
     List<Widget> widgets = new List();
-    double height = MediaQuery.of(context).size.height;
 
     int i = 0;
     for (Alignment align in super.childAlignment(overflow: 2)) {

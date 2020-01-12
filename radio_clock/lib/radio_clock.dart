@@ -4,14 +4,15 @@
 
 import 'dart:async';
 
-import 'package:digital_clock/line_painter.dart';
-import 'package:digital_clock/scale_tick.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_clock_helper/model.dart';
 import 'package:intl/intl.dart';
 
+import 'rect_painter.dart';
 import 'scale_text.dart';
+import 'line_painter.dart';
+import 'scale_tick.dart';
 
 enum _Element {
   background,
@@ -56,7 +57,7 @@ class _RadioClockState extends State<RadioClock> {
     _updateModel();
 
     // Remove UI elements (app bar, navigation bar)
-    SystemChrome.setEnabledSystemUIOverlays([]);
+    //SystemChrome.setEnabledSystemUIOverlays([]);
 
     // Switch to landscape orientation
     SystemChrome.setPreferredOrientations([
@@ -100,6 +101,18 @@ class _RadioClockState extends State<RadioClock> {
     });
   }
 
+  GlobalKey _keyContainer = GlobalKey();
+  double _lastWidth;
+  double _lastHeight;
+
+  // To draw precisely on the canvas we need the actual size of the widget without changing the clock helper code
+  void _updateSize(BuildContext context) {
+    final RenderBox renderBoxContainer = _keyContainer.currentContext.findRenderObject();
+    final Size size = renderBoxContainer.size;
+    _lastWidth = size.width;
+    _lastHeight = size.height;
+  }
+
   @override
   Widget build(BuildContext context) {
     final int minuteTicks = 7; // Max number of numbers to show for minutes/hours/days
@@ -108,7 +121,12 @@ class _RadioClockState extends State<RadioClock> {
 
     final colors = Theme.of(context).brightness == Brightness.light ? _lightTheme : _darkTheme;
     double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height - 4; //Do not obscure ClockModel border
+    double height = MediaQuery.of(context).size.height;
+    if (_lastWidth != null && _lastHeight != null) { // Get the actual size of the widget
+      width = _lastWidth;
+      height = _lastHeight;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateSize(context));
 
     // Ratio to the next minute, hour or day
     final double minuteOffset = -(_dateTime.second / 60 + _dateTime.millisecond / 1000 / 60);
@@ -144,16 +162,20 @@ class _RadioClockState extends State<RadioClock> {
     return Container(
       color: colors[_Element.background],
       child: Stack(
+        key: _keyContainer,
         children: <Widget>[
-          ScaleText(Alignment(0, -0.9), dayTicks + 2, width / 2, dayOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.04, fontFamily: "Roboto"), dates),
-          ScaleText(Alignment(0, -0.8), dayTicks + 2, width / 2, dayOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.08, fontFamily: "Roboto"), days),
-          ScaleText(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.18, fontFamily: "Roboto"), hours),
-          ScaleTick(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset + 0.5, colors[_Element.ticks], height * 0.04),
-          ScaleTick(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset + 0.25, colors[_Element.ticks], height * 0.02),
-          ScaleTick(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset - 0.25, colors[_Element.ticks], height * 0.02),
-          ScaleText(Alignment(0, 0.85), minuteTicks + 2, width / 2, minuteOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.10, fontFamily: "Roboto"), minutes),
-          ScaleTick(Alignment(0, 0.85), minuteTicks + 2, width / 2, minuteOffset + 0.5, colors[_Element.ticks], height * 0.02),
-          CustomPaint(painter: LinePainter(Offset(width / 2, 0), Offset(width / 2, height), colors[_Element.line]))
+          ScaleText(Alignment(0, -0.9), dayTicks + 2, width / 2, dayOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.04, fontFamily: "Roboto"), dates, height),
+          ScaleText(Alignment(0, -0.8), dayTicks + 2, width / 2, dayOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.08, fontFamily: "Roboto"), days, height),
+          ScaleText(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.18, fontFamily: "Roboto"), hours, height),
+          ScaleTick(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset + 0.5, colors[_Element.ticks], height * 0.04, height),
+          ScaleTick(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset + 0.25, colors[_Element.ticks], height * 0.02, height),
+          ScaleTick(Alignment(0, 0), hourTicks + 2, width / 2, hourOffset - 0.25, colors[_Element.ticks], height * 0.02, height),
+          ScaleText(Alignment(0, 0.85), minuteTicks + 2, width / 2, minuteOffset, TextStyle(color: colors[_Element.text], fontSize: height * 0.10, fontFamily: "Roboto"), minutes, height),
+          ScaleTick(Alignment(0, 0.85), minuteTicks + 2, width / 2, minuteOffset + 0.5, colors[_Element.ticks], height * 0.02, height),
+          CustomPaint(painter: LinePainter(Offset(width / 2, 0), Offset(width / 2, height), colors[_Element.line])),
+          CustomPaint(painter: RectPainter(Offset(-(MediaQuery.of(context).size.width - width), 0), Offset(0, height), colors[_Element.background])), // Draw rectangles outside of the clock view to cut off the additional text/ticks
+          CustomPaint(painter: RectPainter(Offset(width, 0), Offset(MediaQuery.of(context).size.width, height), colors[_Element.background])),
+          CustomPaint(painter: RectPainter(Offset(0, 0), Offset(MediaQuery.of(context).size.width, (MediaQuery.of(context).size.height - height)/2), colors[_Element.background])),
         ],
       ),
     );

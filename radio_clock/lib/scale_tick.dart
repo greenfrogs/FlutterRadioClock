@@ -2,17 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:digital_clock/line_painter.dart';
 import 'package:flutter/material.dart';
 
+import 'line_painter.dart';
 import 'scale.dart';
 
 // Draws the tick object at specific frequencies
 class ScaleTick extends Scale {
   final Color color;
   final double length;
+  final double height;
 
-  ScaleTick(Alignment alignment, int count, double radius, double offset, this.color, this.length)
+  ScaleTick(Alignment alignment, int count, double radius, double offset, this.color, this.length, this.height)
       : super(alignment, count, radius, offset);
 
   @override
@@ -27,7 +28,7 @@ class ScaleTick extends Scale {
     }
 
     return Transform.translate(
-      offset: Offset(super.alignment.x * super.radius, super.alignment.y * MediaQuery.of(context).size.height / 2),
+      offset: Offset(super.alignment.x * super.radius, super.alignment.y * height / 2),
       child: Stack(
         children: widgets,
       ),
